@@ -262,16 +262,15 @@ function SyncBadge({status}){
 function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,activeMId,syncSt}){
   const now=new Date();
   const mp=mkPid("monthly"),yp=mkPid("yearly");
-  const [catF,setCatF]=useState(["all"]);
+  const [freqF,setFreqF]=useState(null);  // null=all  "monthly"  "yearly"
+  const [catF,setCatF]=useState(null);    // null=all  or catId
   const [search,setSearch]=useState("");
   const hr=now.getHours();
   const greeting=hr<12?"Good Morning, Buns":hr<17?"Good Afternoon, Buns":"Good Evening, Buns";
 
-  const toggleCat=id=>{
-    if(id==="all"){setCatF(["all"]);return;}
-    const nx=catF.includes("all")?[id]:catF.includes(id)?catF.filter(x=>x!==id):[...catF,id];
-    setCatF(nx.length?nx:["all"]);
-  };
+  const toggleFreq=f=>setFreqF(p=>p===f?null:f);
+  const toggleCatF=id=>setCatF(p=>p===id?null:id);
+  const clearAll=()=>{setFreqF(null);setCatF(null);};
   const isDone=(cid,p)=>comps.some(c=>c.choreId===cid&&c.periodId===p&&c.completed);
   const toggleChore=(cid,p)=>{
     const mName=(members.find(m=>m.id===activeMId)||{}).name||"";
@@ -283,8 +282,12 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
 
   const active=chores.filter(c=>c.active);
   const activeCats=cats.filter(c=>c.active);
-  const filtered=active.filter(ch=>(catF.includes("all")||catF.includes(ch.categoryId))&&
-    (!search||ch.title.toLowerCase().includes(search.toLowerCase())));
+  const filtered=active.filter(ch=>{
+    const mF=!freqF||ch.frequency===freqF;
+    const mC=!catF||ch.categoryId===catF;
+    const mS=!search||ch.title.toLowerCase().includes(search.toLowerCase());
+    return mF&&mC&&mS;
+  });
   const monthly=filtered.filter(c=>c.frequency==="monthly");
   const yearly=filtered.filter(c=>c.frequency==="yearly");
   const allM=active.filter(c=>c.frequency==="monthly");
@@ -296,7 +299,9 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
   const pct=total?Math.round((done/total)*100):0;
 
   const catStats=activeCats.map(cat=>{
-    const cc=active.filter(c=>c.categoryId===cat.id);
+    const cc=freqF
+      ? active.filter(c=>c.categoryId===cat.id&&c.frequency===freqF)
+      : active.filter(c=>c.categoryId===cat.id);
     const dn=cc.filter(c=>isDone(c.id,c.frequency==="monthly"?mp:yp)).length;
     return {...cat,total:cc.length,done:dn};
   }).filter(c=>c.total>0);
@@ -370,7 +375,7 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
         {/* Header row */}
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            {!isWide&&<Logo size={32} style={{flexShrink:0}}/>}
+            {!isWide&&<Logo size={46} style={{flexShrink:0,borderRadius:10}}/>}
             <div>
               <div style={{fontSize:11,fontWeight:700,color:"var(--text3)",
                 textTransform:"uppercase",letterSpacing:".08em"}}>
@@ -393,48 +398,72 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
           </div>
         </div>
 
-        {/* Progress cards */}
-        <div style={{display:"grid",gridTemplateColumns:isWide?"1fr 1fr 1fr":"1fr 1fr",
-          gap:10,marginBottom:12}}>
-          <div style={{background:"var(--bg2)",borderRadius:16,padding:"13px 15px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:7}}>
-              <span style={{fontSize:11,fontWeight:700,color:"var(--text2)"}}>Monthly Progress</span>
-              <span style={{fontSize:12,fontWeight:800,color:BRAND.coral}}>{mDone}/{allM.length}</span>
+        {/* ── Frequency filter cards (All / Monthly / Yearly) ── */}
+        <div style={{display:"flex",gap:10,overflowX:"auto",scrollbarWidth:"none",
+          marginBottom:10,paddingBottom:2}}>
+          {[
+            {id:"all",   label:"All Chores", count:done,  total:total,  color:BRAND.slate,  isActive:!freqF&&!catF, onClick:clearAll},
+            {id:"monthly",label:"Monthly",   count:mDone, total:allM.length, color:BRAND.coral,  isActive:freqF==="monthly", onClick:()=>toggleFreq("monthly")},
+            {id:"yearly", label:"Yearly",    count:yDone, total:allY.length, color:BRAND.slate,  isActive:freqF==="yearly",  onClick:()=>toggleFreq("yearly")},
+          ].map(card=>(
+            <div key={card.id} onClick={card.onClick} style={{
+              flexShrink:0,minWidth:isWide?150:130,
+              background:card.isActive?"var(--bg2)":"var(--bg2)",
+              borderRadius:16,padding:"13px 15px",cursor:"pointer",
+              border:card.isActive?"2px solid "+card.color:"2px solid transparent",
+              outline:card.isActive?"none":"1.5px solid var(--border)",
+              outlineOffset:"-1.5px",
+              transition:"all .18s",
+            }}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:7}}>
+                <span style={{fontSize:11,fontWeight:700,
+                  color:card.isActive?card.color:"var(--text2)"}}>{card.label}</span>
+                <span style={{fontSize:13,fontWeight:900,
+                  color:card.isActive?card.color:"var(--text2)"}}>{card.count}/{card.total}</span>
+              </div>
+              <Bar value={card.total?(card.count/card.total)*100:0}
+                color={card.isActive?card.color:"var(--border)"} h={5}/>
             </div>
-            <Bar value={allM.length?(mDone/allM.length)*100:0} color={BRAND.coral}/>
-          </div>
-          <div style={{background:"var(--bg2)",borderRadius:16,padding:"13px 15px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:7}}>
-              <span style={{fontSize:11,fontWeight:700,color:"var(--text2)"}}>Yearly Progress</span>
-              <span style={{fontSize:12,fontWeight:800,color:BRAND.slate}}>{yDone}/{allY.length}</span>
-            </div>
-            <Bar value={allY.length?(yDone/allY.length)*100:0} color={BRAND.slate}/>
-          </div>
-          {isWide&&<div style={{background:"var(--bg2)",borderRadius:16,padding:"13px 15px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:7}}>
-              <span style={{fontSize:11,fontWeight:700,color:"var(--text2)"}}>Overall Progress</span>
-              <span style={{fontSize:12,fontWeight:800,color:BRAND.green}}>{pct}%</span>
-            </div>
-            <Bar value={pct} color={BRAND.green}/>
-          </div>}
+          ))}
         </div>
 
-        {/* Category stat pills */}
-        {catStats.length>0&&<div style={{display:"flex",gap:8,overflowX:"auto",
-          paddingBottom:8,scrollbarWidth:"none",marginBottom:8}}>
-          {catStats.map(c=>{
-            const col=CC[c.color]||CC.blue;
-            return (
-              <div key={c.id} style={{flexShrink:0,background:"var(--bg2)",borderRadius:12,
-                padding:"7px 11px",display:"flex",flexDirection:"column",
-                alignItems:"center",minWidth:56}}>
-                <span style={{fontSize:17}}>{c.icon}</span>
-                <span style={{fontSize:9,fontWeight:700,color:"var(--text2)",marginTop:1}}>{c.name}</span>
-                <span style={{fontSize:10,fontWeight:800,color:col.bg}}>{c.done}/{c.total}</span>
-              </div>
-            );
-          })}
-        </div>}
+        {/* ── Category filter cards ── */}
+        {catStats.length>0&&(
+          <div style={{display:"flex",gap:8,overflowX:"auto",scrollbarWidth:"none",
+            marginBottom:10,paddingBottom:2}}>
+            {/* All-categories card */}
+            <div onClick={()=>setCatF(null)} style={{
+              flexShrink:0,background:"var(--bg2)",borderRadius:12,cursor:"pointer",
+              padding:"8px 11px",display:"flex",flexDirection:"column",alignItems:"center",
+              minWidth:58,transition:"all .18s",
+              border:!catF?"2px solid "+BRAND.slate:"1.5px solid var(--border)",
+            }}>
+              <span style={{fontSize:16}}>⊕</span>
+              <span style={{fontSize:9,fontWeight:700,marginTop:2,
+                color:!catF?BRAND.slate:"var(--text2)"}}>All</span>
+              <span style={{fontSize:10,fontWeight:800,
+                color:!catF?BRAND.slate:"var(--text3)"}}>{done}/{total}</span>
+            </div>
+            {catStats.map(c=>{
+              const col=CC[c.color]||CC.blue;
+              const sel=catF===c.id;
+              return (
+                <div key={c.id} onClick={()=>toggleCatF(c.id)} style={{
+                  flexShrink:0,background:"var(--bg2)",borderRadius:12,cursor:"pointer",
+                  padding:"8px 11px",display:"flex",flexDirection:"column",alignItems:"center",
+                  minWidth:58,transition:"all .18s",
+                  border:sel?"2px solid "+col.bg:"1.5px solid var(--border)",
+                }}>
+                  <span style={{fontSize:16}}>{c.icon}</span>
+                  <span style={{fontSize:9,fontWeight:700,marginTop:2,
+                    color:sel?col.bg:"var(--text2)"}}>{c.name}</span>
+                  <span style={{fontSize:10,fontWeight:800,
+                    color:sel?col.bg:"var(--text3)"}}>{c.done}/{c.total}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Search */}
         <div style={{position:"relative",marginBottom:10}}>
@@ -445,16 +474,6 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
               borderRadius:12,border:"1.5px solid var(--border)",background:"var(--bg2)",
               color:"var(--text1)",fontSize:14,fontFamily:"inherit",outline:"none"}}/>
         </div>
-
-        {/* Category filter chips */}
-        {!isWide&&<div style={{display:"flex",gap:6,overflowX:"auto",
-          paddingBottom:10,scrollbarWidth:"none"}}>
-          <Chip label="All" active={catF.includes("all")} onClick={()=>toggleCat("all")}/>
-          {activeCats.map(c=>(
-            <Chip key={c.id} label={c.icon+" "+c.name} active={catF.includes(c.id)}
-              color={(CC[c.color]||CC.blue).bg} onClick={()=>toggleCat(c.id)}/>
-          ))}
-        </div>}
       </div>
 
       {/* Chore content */}
@@ -468,20 +487,28 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
         ):isWide?(
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:28,paddingTop:16}}>
             <div>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}>
-                <span style={{fontSize:12,fontWeight:700,color:"var(--text3)",
-                  textTransform:"uppercase",letterSpacing:".08em"}}>Monthly Chores</span>
-                <span style={{fontSize:12,fontWeight:700,color:BRAND.coral}}>{mDone}/{allM.length}</span>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+                marginBottom:16,paddingBottom:10,borderBottom:"2px solid rgba(232,115,90,.2)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:4,height:22,borderRadius:99,background:BRAND.coral,flexShrink:0}}/>
+                  <span style={{fontSize:17,fontWeight:900,color:"var(--text1)",letterSpacing:"-.01em"}}>Monthly Chores</span>
+                </div>
+                <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
+                  background:"rgba(232,115,90,.12)",color:BRAND.coral}}>{mDone}/{allM.length}</span>
               </div>
               {mGroups.length?mGroups.map(g=>(
                 <CatGroup key={g.cat.id} cat={g.cat} cs={g.cs} period={mp}/>
               )):<p style={{color:"var(--text3)",fontSize:14}}>No monthly chores match filters</p>}
             </div>
             <div>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}>
-                <span style={{fontSize:12,fontWeight:700,color:"var(--text3)",
-                  textTransform:"uppercase",letterSpacing:".08em"}}>Yearly Chores</span>
-                <span style={{fontSize:12,fontWeight:700,color:BRAND.slate}}>{yDone}/{allY.length}</span>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+                marginBottom:16,paddingBottom:10,borderBottom:"2px solid rgba(61,90,128,.2)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:4,height:22,borderRadius:99,background:BRAND.slate,flexShrink:0}}/>
+                  <span style={{fontSize:17,fontWeight:900,color:"var(--text1)",letterSpacing:"-.01em"}}>Yearly Chores</span>
+                </div>
+                <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
+                  background:"rgba(61,90,128,.12)",color:BRAND.slate}}>{yDone}/{allY.length}</span>
               </div>
               {yGroups.length?yGroups.map(g=>(
                 <CatGroup key={g.cat.id} cat={g.cat} cs={g.cs} period={yp}/>
@@ -491,18 +518,26 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
         ):(
           <div>
             {monthly.length>0&&<div style={{marginBottom:24}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
-                <h3 style={{margin:0,fontSize:12,fontWeight:700,color:"var(--text3)",
-                  textTransform:"uppercase",letterSpacing:".08em"}}>Monthly Chores</h3>
-                <span style={{fontSize:12,color:"var(--text3)"}}>{mDone}/{allM.length}</span>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+                marginBottom:14,paddingBottom:8,borderBottom:"2px solid rgba(232,115,90,.2)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:4,height:20,borderRadius:99,background:BRAND.coral,flexShrink:0}}/>
+                  <span style={{fontSize:16,fontWeight:900,color:"var(--text1)",letterSpacing:"-.01em"}}>Monthly Chores</span>
+                </div>
+                <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
+                  background:"rgba(232,115,90,.12)",color:BRAND.coral}}>{mDone}/{allM.length}</span>
               </div>
               {mGroups.map(g=><CatGroup key={g.cat.id} cat={g.cat} cs={g.cs} period={mp}/>)}
             </div>}
             {yearly.length>0&&<div style={{marginBottom:24}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
-                <h3 style={{margin:0,fontSize:12,fontWeight:700,color:"var(--text3)",
-                  textTransform:"uppercase",letterSpacing:".08em"}}>Yearly Chores</h3>
-                <span style={{fontSize:12,color:"var(--text3)"}}>{yDone}/{allY.length}</span>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+                marginBottom:14,paddingBottom:8,borderBottom:"2px solid rgba(61,90,128,.2)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:4,height:20,borderRadius:99,background:BRAND.slate,flexShrink:0}}/>
+                  <span style={{fontSize:16,fontWeight:900,color:"var(--text1)",letterSpacing:"-.01em"}}>Yearly Chores</span>
+                </div>
+                <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
+                  background:"rgba(61,90,128,.12)",color:BRAND.slate}}>{yDone}/{allY.length}</span>
               </div>
               {yGroups.map(g=><CatGroup key={g.cat.id} cat={g.cat} cs={g.cs} period={yp}/>)}
             </div>}
