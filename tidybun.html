@@ -399,30 +399,27 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
         </div>
 
         {/* ── Frequency filter cards (All / Monthly / Yearly) ── */}
-        <div style={{display:"flex",gap:10,overflowX:"auto",scrollbarWidth:"none",
-          marginBottom:10,paddingBottom:2}}>
+        <div style={{display:"flex",gap:8,marginBottom:10}}>
           {[
-            {id:"all",   label:"All Chores", count:done,  total:total,  color:BRAND.slate,  isActive:!freqF&&!catF, onClick:clearAll},
-            {id:"monthly",label:"Monthly",   count:mDone, total:allM.length, color:BRAND.coral,  isActive:freqF==="monthly", onClick:()=>toggleFreq("monthly")},
-            {id:"yearly", label:"Yearly",    count:yDone, total:allY.length, color:BRAND.slate,  isActive:freqF==="yearly",  onClick:()=>toggleFreq("yearly")},
+            {id:"all",    label:"All",     sub:"Chores", count:done,  total:total,       color:BRAND.slate, isActive:!freqF&&!catF,        onClick:clearAll},
+            {id:"monthly",label:"Monthly", sub:"Chores", count:mDone, total:allM.length, color:BRAND.coral, isActive:freqF==="monthly",    onClick:()=>toggleFreq("monthly")},
+            {id:"yearly", label:"Yearly",  sub:"Chores", count:yDone, total:allY.length, color:BRAND.slate, isActive:freqF==="yearly",     onClick:()=>toggleFreq("yearly")},
           ].map(card=>(
             <div key={card.id} onClick={card.onClick} style={{
-              flexShrink:0,minWidth:isWide?150:130,
-              background:card.isActive?"var(--bg2)":"var(--bg2)",
-              borderRadius:16,padding:"13px 15px",cursor:"pointer",
-              border:card.isActive?"2px solid "+card.color:"2px solid transparent",
-              outline:card.isActive?"none":"1.5px solid var(--border)",
-              outlineOffset:"-1.5px",
+              flex:1,minWidth:0,
+              background:"var(--bg2)",
+              borderRadius:14,padding:"10px 11px",cursor:"pointer",
+              border:card.isActive?"2px solid "+card.color:"1.5px solid var(--border)",
               transition:"all .18s",
             }}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:7}}>
-                <span style={{fontSize:11,fontWeight:700,
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                <span style={{fontSize:11,fontWeight:700,lineHeight:1.1,
                   color:card.isActive?card.color:"var(--text2)"}}>{card.label}</span>
-                <span style={{fontSize:13,fontWeight:900,
+                <span style={{fontSize:12,fontWeight:900,
                   color:card.isActive?card.color:"var(--text2)"}}>{card.count}/{card.total}</span>
               </div>
               <Bar value={card.total?(card.count/card.total)*100:0}
-                color={card.isActive?card.color:"var(--border)"} h={5}/>
+                color={card.isActive?card.color:"var(--border)"} h={4}/>
             </div>
           ))}
         </div>
