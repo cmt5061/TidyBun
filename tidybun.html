@@ -71,15 +71,24 @@ const DEF_CHORES = [
   {id:"ch8",title:"Mow Lawn",            notes:"",categoryId:"c3",frequency:"monthly",active:true,targetMonth:null,targetSeason:null,createdAt:Date.now()},
   {id:"ch9",title:"Sanitize Garbage Disposal",notes:"",categoryId:"c4",frequency:"monthly",active:true,targetMonth:null,targetSeason:null,createdAt:Date.now()},
   {id:"ch10",title:"Change HVAC Filter", notes:"Replace if needed",categoryId:"c1",frequency:"yearly",active:true,targetMonth:4,targetSeason:null,createdAt:Date.now()},
+  {id:"ch11",title:"Take Out Trash",      notes:"",categoryId:"c1",frequency:"weekly",active:true,targetMonth:null,targetSeason:null,createdAt:Date.now()},
+  {id:"ch12",title:"Wipe Down Counters",  notes:"Kitchen and bathrooms",categoryId:"c4",frequency:"weekly",active:true,targetMonth:null,targetSeason:null,createdAt:Date.now()},
+  {id:"ch13",title:"Vacuum & Sweep",      notes:"",categoryId:"c1",frequency:"weekly",active:true,targetMonth:null,targetSeason:null,createdAt:Date.now()},
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────
+function weekNum(d){
+  const jan1=new Date(d.getFullYear(),0,1);
+  return Math.ceil((((d-jan1)/86400000)+jan1.getDay()+1)/7);
+}
 function mkPid(freq,d=new Date()){
   if(freq==="monthly") return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+  if(freq==="weekly")  return d.getFullYear()+"-W"+String(weekNum(d)).padStart(2,"0");
   return String(d.getFullYear());
 }
 function fmtP(p){
   if(p.length===4) return p;
+  if(p.includes("-W")){const[y,w]=p.split("-W");return "Week "+w+", "+y;}
   const [y,m]=p.split("-");
   return new Date(y,m-1).toLocaleString("default",{month:"long",year:"numeric"});
 }
@@ -261,7 +270,7 @@ function SyncBadge({status}){
 
 function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,activeMId,syncSt}){
   const now=new Date();
-  const mp=mkPid("monthly"),yp=mkPid("yearly");
+  const mp=mkPid("monthly"),yp=mkPid("yearly"),wp=mkPid("weekly");
   const [freqF,setFreqF]=useState(null);  // null=all  "monthly"  "yearly"
   const [catF,setCatF]=useState(null);    // null=all  or catId
   const [search,setSearch]=useState("");
@@ -288,21 +297,24 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
     const mS=!search||ch.title.toLowerCase().includes(search.toLowerCase());
     return mF&&mC&&mS;
   });
+  const weekly=filtered.filter(c=>c.frequency==="weekly");
   const monthly=filtered.filter(c=>c.frequency==="monthly");
   const yearly=filtered.filter(c=>c.frequency==="yearly");
+  const allW=active.filter(c=>c.frequency==="weekly");
   const allM=active.filter(c=>c.frequency==="monthly");
   const allY=active.filter(c=>c.frequency==="yearly");
+  const wDone=allW.filter(c=>isDone(c.id,wp)).length;
   const mDone=allM.filter(c=>isDone(c.id,mp)).length;
   const yDone=allY.filter(c=>isDone(c.id,yp)).length;
-  const total=allM.length+allY.length;
-  const done=mDone+yDone;
+  const total=allW.length+allM.length+allY.length;
+  const done=wDone+mDone+yDone;
   const pct=total?Math.round((done/total)*100):0;
 
   const catStats=activeCats.map(cat=>{
     const cc=freqF
       ? active.filter(c=>c.categoryId===cat.id&&c.frequency===freqF)
       : active.filter(c=>c.categoryId===cat.id);
-    const dn=cc.filter(c=>isDone(c.id,c.frequency==="monthly"?mp:yp)).length;
+    const dn=cc.filter(c=>isDone(c.id,c.frequency==="monthly"?mp:c.frequency==="weekly"?wp:yp)).length;
     return {...cat,total:cc.length,done:dn};
   }).filter(c=>c.total>0);
 
@@ -364,6 +376,7 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
     );
   }
 
+  const wGroups=groupByCat(weekly);
   const mGroups=groupByCat(monthly);
   const yGroups=groupByCat(yearly);
 
@@ -401,9 +414,10 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
         {/* ── Frequency filter cards (All / Monthly / Yearly) ── */}
         <div style={{display:"flex",gap:8,marginBottom:10}}>
           {[
-            {id:"all",    label:"All",     sub:"Chores", count:done,  total:total,       color:BRAND.slate, isActive:!freqF&&!catF,        onClick:clearAll},
-            {id:"monthly",label:"Monthly", sub:"Chores", count:mDone, total:allM.length, color:BRAND.coral, isActive:freqF==="monthly",    onClick:()=>toggleFreq("monthly")},
-            {id:"yearly", label:"Yearly",  sub:"Chores", count:yDone, total:allY.length, color:BRAND.slate, isActive:freqF==="yearly",     onClick:()=>toggleFreq("yearly")},
+            {id:"all",    label:"All",    count:done,  total:total,       color:BRAND.slate, isActive:!freqF&&!catF,     onClick:clearAll},
+            {id:"weekly", label:"Weekly", count:wDone, total:allW.length, color:BRAND.green, isActive:freqF==="weekly",   onClick:()=>toggleFreq("weekly")},
+            {id:"monthly",label:"Monthly",count:mDone, total:allM.length, color:BRAND.coral, isActive:freqF==="monthly", onClick:()=>toggleFreq("monthly")},
+            {id:"yearly", label:"Yearly", count:yDone, total:allY.length, color:BRAND.slate, isActive:freqF==="yearly",  onClick:()=>toggleFreq("yearly")},
           ].map(card=>(
             <div key={card.id} onClick={card.onClick} style={{
               flex:1,minWidth:0,
@@ -482,38 +496,68 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
             <p style={{color:"var(--text3)",fontSize:14,margin:0}}>Create your first chore to get started.</p>
           </div>
         ):isWide?(
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:28,paddingTop:16}}>
-            <div>
+          <div style={{paddingTop:16}}>
+            {/* Weekly row — full width */}
+            {(allW.length>0||freqF==="weekly")&&<div style={{marginBottom:24}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
-                marginBottom:16,paddingBottom:10,borderBottom:"2px solid rgba(232,115,90,.2)"}}>
+                marginBottom:16,paddingBottom:10,borderBottom:"2px solid rgba(90,158,111,.2)"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <div style={{width:4,height:22,borderRadius:99,background:BRAND.coral,flexShrink:0}}/>
-                  <span style={{fontSize:17,fontWeight:900,color:"var(--text1)",letterSpacing:"-.01em"}}>Monthly Chores</span>
+                  <div style={{width:4,height:22,borderRadius:99,background:BRAND.green,flexShrink:0}}/>
+                  <span style={{fontSize:17,fontWeight:900,color:"var(--text1)",letterSpacing:"-.01em"}}>Weekly Chores</span>
                 </div>
                 <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
-                  background:"rgba(232,115,90,.12)",color:BRAND.coral}}>{mDone}/{allM.length}</span>
+                  background:"rgba(90,158,111,.12)",color:BRAND.green}}>{wDone}/{allW.length}</span>
               </div>
-              {mGroups.length?mGroups.map(g=>(
-                <CatGroup key={g.cat.id} cat={g.cat} cs={g.cs} period={mp}/>
-              )):<p style={{color:"var(--text3)",fontSize:14}}>No monthly chores match filters</p>}
-            </div>
-            <div>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
-                marginBottom:16,paddingBottom:10,borderBottom:"2px solid rgba(61,90,128,.2)"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <div style={{width:4,height:22,borderRadius:99,background:BRAND.slate,flexShrink:0}}/>
-                  <span style={{fontSize:17,fontWeight:900,color:"var(--text1)",letterSpacing:"-.01em"}}>Yearly Chores</span>
+              {wGroups.length?wGroups.map(g=>(
+                <CatGroup key={g.cat.id} cat={g.cat} cs={g.cs} period={wp}/>
+              )):<p style={{color:"var(--text3)",fontSize:14}}>No weekly chores match filters</p>}
+            </div>}
+            {/* Monthly + Yearly side by side */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:28}}>
+              <div>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+                  marginBottom:16,paddingBottom:10,borderBottom:"2px solid rgba(232,115,90,.2)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{width:4,height:22,borderRadius:99,background:BRAND.coral,flexShrink:0}}/>
+                    <span style={{fontSize:17,fontWeight:900,color:"var(--text1)",letterSpacing:"-.01em"}}>Monthly Chores</span>
+                  </div>
+                  <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
+                    background:"rgba(232,115,90,.12)",color:BRAND.coral}}>{mDone}/{allM.length}</span>
                 </div>
-                <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
-                  background:"rgba(61,90,128,.12)",color:BRAND.slate}}>{yDone}/{allY.length}</span>
+                {mGroups.length?mGroups.map(g=>(
+                  <CatGroup key={g.cat.id} cat={g.cat} cs={g.cs} period={mp}/>
+                )):<p style={{color:"var(--text3)",fontSize:14}}>No monthly chores match filters</p>}
               </div>
-              {yGroups.length?yGroups.map(g=>(
-                <CatGroup key={g.cat.id} cat={g.cat} cs={g.cs} period={yp}/>
-              )):<p style={{color:"var(--text3)",fontSize:14}}>No yearly chores match filters</p>}
+              <div>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+                  marginBottom:16,paddingBottom:10,borderBottom:"2px solid rgba(61,90,128,.2)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{width:4,height:22,borderRadius:99,background:BRAND.slate,flexShrink:0}}/>
+                    <span style={{fontSize:17,fontWeight:900,color:"var(--text1)",letterSpacing:"-.01em"}}>Yearly Chores</span>
+                  </div>
+                  <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
+                    background:"rgba(61,90,128,.12)",color:BRAND.slate}}>{yDone}/{allY.length}</span>
+                </div>
+                {yGroups.length?yGroups.map(g=>(
+                  <CatGroup key={g.cat.id} cat={g.cat} cs={g.cs} period={yp}/>
+                )):<p style={{color:"var(--text3)",fontSize:14}}>No yearly chores match filters</p>}
+              </div>
             </div>
           </div>
         ):(
           <div>
+            {weekly.length>0&&<div style={{marginBottom:24}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+                marginBottom:14,paddingBottom:8,borderBottom:"2px solid rgba(90,158,111,.2)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:4,height:20,borderRadius:99,background:BRAND.green,flexShrink:0}}/>
+                  <span style={{fontSize:16,fontWeight:900,color:"var(--text1)",letterSpacing:"-.01em"}}>Weekly Chores</span>
+                </div>
+                <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
+                  background:"rgba(90,158,111,.12)",color:BRAND.green}}>{wDone}/{allW.length}</span>
+              </div>
+              {wGroups.map(g=><CatGroup key={g.cat.id} cat={g.cat} cs={g.cs} period={wp}/>)}
+            </div>}
             {monthly.length>0&&<div style={{marginBottom:24}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
                 marginBottom:14,paddingBottom:8,borderBottom:"2px solid rgba(232,115,90,.2)"}}>
@@ -550,7 +594,12 @@ function History({chores,comps,cats,isWide,members}){
   const now=new Date();
   const [tab,setTab]=useState("monthly");
   const periods=[];
-  if(tab==="monthly"){
+  if(tab==="weekly"){
+    for(let i=0;i<8;i++){
+      const d=new Date(); d.setDate(d.getDate()-i*7);
+      periods.push(mkPid("weekly",d));
+    }
+  } else if(tab==="monthly"){
     for(let i=0;i<6;i++){
       const d=new Date(now.getFullYear(),now.getMonth()-i,1);
       periods.push(mkPid("monthly",d));
@@ -559,7 +608,7 @@ function History({chores,comps,cats,isWide,members}){
     for(let i=0;i<5;i++) periods.push(String(now.getFullYear()-i));
   }
   const [sel,setSel]=useState(periods[0]);
-  const freq=tab==="monthly"?"monthly":"yearly";
+  const freq=tab;
   const fchores=chores.filter(c=>c.active&&c.frequency===freq);
   const isDone=cid=>comps.some(c=>c.choreId===cid&&c.periodId===sel&&c.completed);
   const getComp=cid=>comps.find(c=>c.choreId===cid&&c.periodId===sel&&c.completed);
@@ -575,8 +624,8 @@ function History({chores,comps,cats,isWide,members}){
       <PgHeader title="History" showLogo={!isWide}
         right={
           <div style={{display:"flex",gap:6}}>
-            {["monthly","yearly"].map(t=>(
-              <button key={t} onClick={()=>{setTab(t);setSel(t==="monthly"?periods[0]:String(now.getFullYear()));}}
+            {["weekly","monthly","yearly"].map(t=>(
+              <button key={t} onClick={()=>{setTab(t);setSel(t==="weekly"?mkPid("weekly"):t==="monthly"?periods[0]:String(now.getFullYear()));}}
                 style={{padding:"7px 16px",borderRadius:99,border:"none",fontFamily:"inherit",
                   fontWeight:700,fontSize:13,background:tab===t?BRAND.slate:"var(--bg3)",
                   color:tab===t?"#fff":"var(--text2)"}}>
@@ -816,7 +865,7 @@ function ChoreModal({cats,onSave,onClose,editing}){
       </Fld>
       <Fld label="Frequency">
         <div style={{display:"flex",gap:10}}>
-          {["monthly","yearly"].map(f=>(
+          {["weekly","monthly","yearly"].map(f=>(
             <button key={f} onClick={()=>setForm(p=>({...p,frequency:f}))} style={{
               flex:1,padding:"11px",borderRadius:12,border:"1.5px solid",fontFamily:"inherit",
               borderColor:form.frequency===f?BRAND.slate:"var(--border)",
