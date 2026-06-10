@@ -78,8 +78,10 @@ const DEF_CHORES = [
 
 // ── Helpers ───────────────────────────────────────────────────────
 function weekNum(d){
-  const jan1=new Date(d.getFullYear(),0,1);
-  return Math.ceil((((d-jan1)/86400000)+jan1.getDay()+1)/7);
+  const utc=Date.UTC(d.getFullYear(),d.getMonth(),d.getDate());
+  const jan1=Date.UTC(d.getFullYear(),0,1);
+  const days=Math.floor((utc-jan1)/86400000);
+  return Math.ceil((days+new Date(jan1).getUTCDay()+1)/7);
 }
 function mkPid(freq,d=new Date()){
   if(freq==="monthly") return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
@@ -300,6 +302,9 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
   const weekly=filtered.filter(c=>c.frequency==="weekly");
   const monthly=filtered.filter(c=>c.frequency==="monthly");
   const yearly=filtered.filter(c=>c.frequency==="yearly");
+  const wDoneShown=weekly.filter(c=>isDone(c.id,wp)).length;
+  const mDoneShown=monthly.filter(c=>isDone(c.id,mp)).length;
+  const yDoneShown=yearly.filter(c=>isDone(c.id,yp)).length;
   const allW=active.filter(c=>c.frequency==="weekly");
   const allM=active.filter(c=>c.frequency==="monthly");
   const allY=active.filter(c=>c.frequency==="yearly");
@@ -424,14 +429,12 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
               background:"var(--bg2)",
               borderRadius:14,padding:"10px 11px",cursor:"pointer",
               border:card.isActive?"2px solid "+card.color:"1.5px solid var(--border)",
-              transition:"all .18s",
+              transition:"all .18s",textAlign:"center",
             }}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
-                <span style={{fontSize:11,fontWeight:700,lineHeight:1.1,
-                  color:card.isActive?card.color:"var(--text2)"}}>{card.label}</span>
-                <span style={{fontSize:12,fontWeight:900,
-                  color:card.isActive?card.color:"var(--text2)"}}>{card.count}/{card.total}</span>
-              </div>
+              <div style={{fontSize:10,fontWeight:700,lineHeight:1,marginBottom:3,
+                color:card.isActive?card.color:"var(--text2)"}}>{card.label}</div>
+              <div style={{fontSize:16,fontWeight:900,lineHeight:1,marginBottom:6,
+                color:card.isActive?card.color:"var(--text1)"}}>{card.count}/{card.total}</div>
               <Bar value={card.total?(card.count/card.total)*100:0}
                 color={card.isActive?card.color:"var(--border)"} h={4}/>
             </div>
@@ -503,10 +506,10 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
                 marginBottom:16,paddingBottom:10,borderBottom:"2px solid rgba(90,158,111,.2)"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <div style={{width:4,height:22,borderRadius:99,background:BRAND.green,flexShrink:0}}/>
-                  <span style={{fontSize:17,fontWeight:900,color:"var(--text1)",letterSpacing:"-.01em"}}>Weekly Chores</span>
+                  <span style={{fontSize:17,fontWeight:900,color:"var(--text1)",letterSpacing:".06em",fontSize:13}}>WEEKLY CHORES</span>
                 </div>
                 <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
-                  background:"rgba(90,158,111,.12)",color:BRAND.green}}>{wDone}/{allW.length}</span>
+                  background:"rgba(90,158,111,.12)",color:BRAND.green}}>{wDoneShown}/{weekly.length}</span>
               </div>
               {wGroups.length?wGroups.map(g=>(
                 <CatGroup key={g.cat.id} cat={g.cat} cs={g.cs} period={wp}/>
@@ -519,10 +522,10 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
                   marginBottom:16,paddingBottom:10,borderBottom:"2px solid rgba(232,115,90,.2)"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
                     <div style={{width:4,height:22,borderRadius:99,background:BRAND.coral,flexShrink:0}}/>
-                    <span style={{fontSize:17,fontWeight:900,color:"var(--text1)",letterSpacing:"-.01em"}}>Monthly Chores</span>
+                    <span style={{fontSize:17,fontWeight:900,color:"var(--text1)",letterSpacing:".06em",fontSize:13}}>MONTHLY CHORES</span>
                   </div>
                   <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
-                    background:"rgba(232,115,90,.12)",color:BRAND.coral}}>{mDone}/{allM.length}</span>
+                    background:"rgba(232,115,90,.12)",color:BRAND.coral}}>{mDoneShown}/{monthly.length}</span>
                 </div>
                 {mGroups.length?mGroups.map(g=>(
                   <CatGroup key={g.cat.id} cat={g.cat} cs={g.cs} period={mp}/>
@@ -533,10 +536,10 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
                   marginBottom:16,paddingBottom:10,borderBottom:"2px solid rgba(61,90,128,.2)"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
                     <div style={{width:4,height:22,borderRadius:99,background:BRAND.slate,flexShrink:0}}/>
-                    <span style={{fontSize:17,fontWeight:900,color:"var(--text1)",letterSpacing:"-.01em"}}>Yearly Chores</span>
+                    <span style={{fontSize:17,fontWeight:900,color:"var(--text1)",letterSpacing:".06em",fontSize:13}}>YEARLY CHORES</span>
                   </div>
                   <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
-                    background:"rgba(61,90,128,.12)",color:BRAND.slate}}>{yDone}/{allY.length}</span>
+                    background:"rgba(61,90,128,.12)",color:BRAND.slate}}>{yDoneShown}/{yearly.length}</span>
                 </div>
                 {yGroups.length?yGroups.map(g=>(
                   <CatGroup key={g.cat.id} cat={g.cat} cs={g.cs} period={yp}/>
@@ -551,10 +554,10 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
                 marginBottom:14,paddingBottom:8,borderBottom:"2px solid rgba(90,158,111,.2)"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <div style={{width:4,height:20,borderRadius:99,background:BRAND.green,flexShrink:0}}/>
-                  <span style={{fontSize:16,fontWeight:900,color:"var(--text1)",letterSpacing:"-.01em"}}>Weekly Chores</span>
+                  <span style={{fontSize:16,fontWeight:900,color:"var(--text1)",letterSpacing:".06em",fontSize:13}}>WEEKLY CHORES</span>
                 </div>
                 <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
-                  background:"rgba(90,158,111,.12)",color:BRAND.green}}>{wDone}/{allW.length}</span>
+                  background:"rgba(90,158,111,.12)",color:BRAND.green}}>{wDoneShown}/{weekly.length}</span>
               </div>
               {wGroups.map(g=><CatGroup key={g.cat.id} cat={g.cat} cs={g.cs} period={wp}/>)}
             </div>}
@@ -563,10 +566,10 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
                 marginBottom:14,paddingBottom:8,borderBottom:"2px solid rgba(232,115,90,.2)"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <div style={{width:4,height:20,borderRadius:99,background:BRAND.coral,flexShrink:0}}/>
-                  <span style={{fontSize:16,fontWeight:900,color:"var(--text1)",letterSpacing:"-.01em"}}>Monthly Chores</span>
+                  <span style={{fontSize:16,fontWeight:900,color:"var(--text1)",letterSpacing:".06em",fontSize:13}}>MONTHLY CHORES</span>
                 </div>
                 <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
-                  background:"rgba(232,115,90,.12)",color:BRAND.coral}}>{mDone}/{allM.length}</span>
+                  background:"rgba(232,115,90,.12)",color:BRAND.coral}}>{mDoneShown}/{monthly.length}</span>
               </div>
               {mGroups.map(g=><CatGroup key={g.cat.id} cat={g.cat} cs={g.cs} period={mp}/>)}
             </div>}
@@ -575,10 +578,10 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
                 marginBottom:14,paddingBottom:8,borderBottom:"2px solid rgba(61,90,128,.2)"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <div style={{width:4,height:20,borderRadius:99,background:BRAND.slate,flexShrink:0}}/>
-                  <span style={{fontSize:16,fontWeight:900,color:"var(--text1)",letterSpacing:"-.01em"}}>Yearly Chores</span>
+                  <span style={{fontSize:16,fontWeight:900,color:"var(--text1)",letterSpacing:".06em",fontSize:13}}>YEARLY CHORES</span>
                 </div>
                 <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
-                  background:"rgba(61,90,128,.12)",color:BRAND.slate}}>{yDone}/{allY.length}</span>
+                  background:"rgba(61,90,128,.12)",color:BRAND.slate}}>{yDoneShown}/{yearly.length}</span>
               </div>
               {yGroups.map(g=><CatGroup key={g.cat.id} cat={g.cat} cs={g.cs} period={yp}/>)}
             </div>}
@@ -621,20 +624,25 @@ function History({chores,comps,cats,isWide,members}){
 
   return (
     <div style={{paddingBottom:isWide?0:88}}>
-      <PgHeader title="History" showLogo={!isWide}
-        right={
-          <div style={{display:"flex",gap:6}}>
-            {["weekly","monthly","yearly"].map(t=>(
-              <button key={t} onClick={()=>{setTab(t);setSel(t==="weekly"?mkPid("weekly"):t==="monthly"?periods[0]:String(now.getFullYear()));}}
-                style={{padding:"7px 16px",borderRadius:99,border:"none",fontFamily:"inherit",
-                  fontWeight:700,fontSize:13,background:tab===t?BRAND.slate:"var(--bg3)",
-                  color:tab===t?"#fff":"var(--text2)"}}>
-                {t.charAt(0).toUpperCase()+t.slice(1)}
-              </button>
-            ))}
-          </div>
-        }
-      />
+      <PgHeader title="History" showLogo={!isWide}/>
+      <div style={{
+        display:"flex",borderBottom:"1px solid var(--border)",
+        padding:isWide?"0 24px":"0 20px",background:"var(--bg1)",
+      }}>
+        {["weekly","monthly","yearly"].map(t=>(
+          <button key={t}
+            onClick={()=>{setTab(t);setSel(t==="weekly"?mkPid("weekly"):t==="monthly"?periods[0]:String(now.getFullYear()));}}
+            style={{
+              padding:"11px 18px",border:"none",fontFamily:"inherit",cursor:"pointer",
+              fontWeight:700,fontSize:14,background:"transparent",
+              color:tab===t?BRAND.coral:"var(--text2)",
+              borderBottom:tab===t?"2.5px solid "+BRAND.coral:"2.5px solid transparent",
+              marginBottom:"-1px",whiteSpace:"nowrap",
+            }}>
+            {t.charAt(0).toUpperCase()+t.slice(1)}
+          </button>
+        ))}
+      </div>
       <div style={{padding:isWide?"16px 24px":"16px 20px"}}>
         {/* Period pills */}
         <div style={{display:"flex",gap:8,overflowX:"auto",marginBottom:16,
