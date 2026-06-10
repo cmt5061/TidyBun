@@ -282,7 +282,9 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
   const toggleFreq=f=>setFreqF(p=>p===f?null:f);
   const toggleCatF=id=>setCatF(p=>p===id?null:id);
   const clearAll=()=>{setFreqF(null);setCatF(null);};
-  const isDone=(cid,p)=>comps.some(c=>c.choreId===cid&&c.periodId===p&&c.completed);
+  // Build lookup Set once per render — checkboxes AND counters share the same truth
+  const _done=new Set(comps.filter(c=>c.completed).map(c=>c.choreId+"||"+c.periodId));
+  const isDone=(cid,p)=>_done.has(cid+"||"+p);
   const toggleChore=(cid,p)=>{
     const mName=(members.find(m=>m.id===activeMId)||{}).name||"";
     const ex=comps.find(c=>c.choreId===cid&&c.periodId===p);
@@ -1474,7 +1476,9 @@ function App(){
           const inc={
             cats:    Array.isArray(data.cats)?    data.cats    : cats,
             chores:  Array.isArray(data.chores)?  data.chores  : chores,
-            comps:   Array.isArray(data.comps)?   data.comps   : comps,
+            // Keep local comps if an unsaved local change is pending (prevents
+            // Firebase from erasing freshly-completed chores mid-debounce)
+            comps:   (Array.isArray(data.comps)&&!saveTimer.current) ? data.comps : comps,
             members: Array.isArray(data.members)? data.members : members,
           };
           // Store BEFORE state updates so auto-save sees no diff
