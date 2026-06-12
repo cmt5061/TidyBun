@@ -77,20 +77,26 @@ const DEF_CHORES = [
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────
-function weekNum(d){
-  const utc=Date.UTC(d.getFullYear(),d.getMonth(),d.getDate());
-  const jan1=Date.UTC(d.getFullYear(),0,1);
-  const days=Math.floor((utc-jan1)/86400000);
-  return Math.ceil((days+new Date(jan1).getUTCDay()+1)/7);
-}
+// weekNum removed — weekly period now uses Monday's local date (unambiguous)
 function mkPid(freq,d=new Date()){
   if(freq==="monthly") return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
-  if(freq==="weekly")  return d.getFullYear()+"-W"+String(weekNum(d)).padStart(2,"0");
+  if(freq==="weekly"){
+    // Anchor to Monday of current week using local date arithmetic
+    const day=d.getDay(); // 0=Sun 1=Mon…6=Sat
+    const diff=day===0?-6:1-day; // steps back to Monday
+    const mon=new Date(d.getFullYear(),d.getMonth(),d.getDate()+diff);
+    return "w-"+mon.getFullYear()+"-"+String(mon.getMonth()+1).padStart(2,"0")+"-"+String(mon.getDate()).padStart(2,"0");
+  }
   return String(d.getFullYear());
 }
 function fmtP(p){
   if(p.length===4) return p;
-  if(p.includes("-W")){const[y,w]=p.split("-W");return "Week "+w+", "+y;}
+  if(p.startsWith("w-")){
+    const[,y,m,dd]=p.split("-");
+    const mon=new Date(Number(y),Number(m)-1,Number(dd));
+    const sun=new Date(Number(y),Number(m)-1,Number(dd)+6);
+    return "Week of "+mon.toLocaleDateString("default",{month:"short",day:"numeric"})+" – "+sun.toLocaleDateString("default",{month:"short",day:"numeric",year:"numeric"});
+  }
   const [y,m]=p.split("-");
   return new Date(y,m-1).toLocaleString("default",{month:"long",year:"numeric"});
 }
@@ -282,7 +288,9 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
   const toggleFreq=f=>setFreqF(p=>p===f?null:f);
   const toggleCatF=id=>setCatF(p=>p===id?null:id);
   const clearAll=()=>{setFreqF(null);setCatF(null);};
-  const isDone=(cid,p)=>comps.some(c=>c.choreId===cid&&c.periodId===p&&c.completed);
+  // Build lookup Set once per render — checkboxes AND counters share the same truth
+  const _done=new Set(comps.filter(c=>c.completed).map(c=>c.choreId+"||"+c.periodId));
+  const isDone=(cid,p)=>_done.has(cid+"||"+p);
   const toggleChore=(cid,p)=>{
     const mName=(members.find(m=>m.id===activeMId)||{}).name||"";
     const ex=comps.find(c=>c.choreId===cid&&c.periodId===p);
@@ -376,7 +384,7 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
           </div>
           <span style={{fontSize:11,fontWeight:700,color:"var(--text3)"}}>{dn}/{cs.length}</span>
         </div>
-        {cs.map(c=><ChoreRow key={c.id} chore={c} p={c.frequency==="monthly"?mp:yp}/>)}
+        {cs.map(c=><ChoreRow key={c.id} chore={c} p={period}/>)}
       </div>
     );
   }
