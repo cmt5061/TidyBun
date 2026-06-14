@@ -439,9 +439,9 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
               border:card.isActive?"2px solid "+card.color:"1.5px solid var(--border)",
               transition:"all .18s",textAlign:"center",
             }}>
-              <div style={{fontSize:10,fontWeight:700,lineHeight:1,marginBottom:3,
+              <div style={{fontSize:9,fontWeight:700,lineHeight:1,marginBottom:2,
                 color:card.isActive?card.color:"var(--text2)"}}>{card.label}</div>
-              <div style={{fontSize:16,fontWeight:900,lineHeight:1,marginBottom:6,
+              <div style={{fontSize:11,fontWeight:800,lineHeight:1,marginBottom:5,
                 color:card.isActive?card.color:"var(--text1)"}}>{card.count}/{card.total}</div>
               <Bar value={card.total?(card.count/card.total)*100:0}
                 color={card.isActive?card.color:"var(--border)"} h={4}/>
@@ -514,7 +514,7 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
                 marginBottom:16,paddingBottom:10,borderBottom:"2px solid rgba(90,158,111,.2)"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <div style={{width:4,height:22,borderRadius:99,background:BRAND.green,flexShrink:0}}/>
-                  <span style={{fontSize:17,fontWeight:900,color:"var(--text1)",letterSpacing:".06em",fontSize:13}}>WEEKLY CHORES</span>
+                  <span style={{fontWeight:900,color:"#D4A017",letterSpacing:".1em",fontSize:12}}>WEEKLY CHORES</span>
                 </div>
                 <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
                   background:"rgba(90,158,111,.12)",color:BRAND.green}}>{wDoneShown}/{weekly.length}</span>
@@ -530,7 +530,7 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
                   marginBottom:16,paddingBottom:10,borderBottom:"2px solid rgba(232,115,90,.2)"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
                     <div style={{width:4,height:22,borderRadius:99,background:BRAND.coral,flexShrink:0}}/>
-                    <span style={{fontSize:17,fontWeight:900,color:"var(--text1)",letterSpacing:".06em",fontSize:13}}>MONTHLY CHORES</span>
+                    <span style={{fontWeight:900,color:"#D4A017",letterSpacing:".1em",fontSize:12}}>MONTHLY CHORES</span>
                   </div>
                   <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
                     background:"rgba(232,115,90,.12)",color:BRAND.coral}}>{mDoneShown}/{monthly.length}</span>
@@ -544,7 +544,7 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
                   marginBottom:16,paddingBottom:10,borderBottom:"2px solid rgba(61,90,128,.2)"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
                     <div style={{width:4,height:22,borderRadius:99,background:BRAND.slate,flexShrink:0}}/>
-                    <span style={{fontSize:17,fontWeight:900,color:"var(--text1)",letterSpacing:".06em",fontSize:13}}>YEARLY CHORES</span>
+                    <span style={{fontWeight:900,color:"#D4A017",letterSpacing:".1em",fontSize:12}}>YEARLY CHORES</span>
                   </div>
                   <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
                     background:"rgba(61,90,128,.12)",color:BRAND.slate}}>{yDoneShown}/{yearly.length}</span>
@@ -562,7 +562,7 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
                 marginBottom:14,paddingBottom:8,borderBottom:"2px solid rgba(90,158,111,.2)"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <div style={{width:4,height:20,borderRadius:99,background:BRAND.green,flexShrink:0}}/>
-                  <span style={{fontSize:16,fontWeight:900,color:"var(--text1)",letterSpacing:".06em",fontSize:13}}>WEEKLY CHORES</span>
+                  <span style={{fontWeight:900,color:"#D4A017",letterSpacing:".1em",fontSize:12}}>WEEKLY CHORES</span>
                 </div>
                 <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
                   background:"rgba(90,158,111,.12)",color:BRAND.green}}>{wDoneShown}/{weekly.length}</span>
@@ -574,7 +574,7 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
                 marginBottom:14,paddingBottom:8,borderBottom:"2px solid rgba(232,115,90,.2)"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <div style={{width:4,height:20,borderRadius:99,background:BRAND.coral,flexShrink:0}}/>
-                  <span style={{fontSize:16,fontWeight:900,color:"var(--text1)",letterSpacing:".06em",fontSize:13}}>MONTHLY CHORES</span>
+                  <span style={{fontWeight:900,color:"#D4A017",letterSpacing:".1em",fontSize:12}}>MONTHLY CHORES</span>
                 </div>
                 <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
                   background:"rgba(232,115,90,.12)",color:BRAND.coral}}>{mDoneShown}/{monthly.length}</span>
@@ -586,7 +586,7 @@ function Home({chores,cats,comps,setComps,darkMode,setDarkMode,isWide,members,ac
                 marginBottom:14,paddingBottom:8,borderBottom:"2px solid rgba(61,90,128,.2)"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <div style={{width:4,height:20,borderRadius:99,background:BRAND.slate,flexShrink:0}}/>
-                  <span style={{fontSize:16,fontWeight:900,color:"var(--text1)",letterSpacing:".06em",fontSize:13}}>YEARLY CHORES</span>
+                  <span style={{fontWeight:900,color:"#D4A017",letterSpacing:".1em",fontSize:12}}>YEARLY CHORES</span>
                 </div>
                 <span style={{fontSize:12,fontWeight:800,padding:"3px 10px",borderRadius:99,
                   background:"rgba(61,90,128,.12)",color:BRAND.slate}}>{yDoneShown}/{yearly.length}</span>
@@ -1279,6 +1279,31 @@ function Settings({syncKey,setSyncKey,darkMode,setDarkMode,members,setMembers,
                 boxShadow:"0 2px 6px rgba(0,0,0,.2)"}}/>
             </button>
           </div>
+
+        <Card>
+          <div style={{fontWeight:700,color:"var(--text1)",fontSize:15,marginBottom:14}}>
+            🔁 Reset Schedule
+          </div>
+          {[
+            {freq:"Weekly",  color:BRAND.green, label:"Every Monday",        detail:"A new period begins each Monday morning"},
+            {freq:"Monthly", color:BRAND.coral, label:"1st of each month",   detail:"Resets at the start of every calendar month"},
+            {freq:"Yearly",  color:BRAND.slate, label:"January 1st",         detail:"Resets at the start of each new year"},
+          ].map(({freq,color,label,detail})=>(
+            <div key={freq} style={{display:"flex",alignItems:"center",gap:12,
+              padding:"10px 0",borderBottom:"1px solid var(--border)"}}>
+              <div style={{width:34,height:34,borderRadius:10,flexShrink:0,
+                background:color+"22",display:"flex",alignItems:"center",
+                justifyContent:"center",fontSize:15,fontWeight:700,color:color}}>
+                {freq[0]}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,color:"var(--text1)",fontSize:14}}>{freq}</div>
+                <div style={{fontSize:12,fontWeight:600,color:color,marginTop:1}}>{label}</div>
+                <div style={{fontSize:11,color:"var(--text3)",marginTop:1,lineHeight:1.4}}>{detail}</div>
+              </div>
+            </div>
+          ))}
+        </Card>
           <div style={{fontWeight:700,color:"var(--text1)"}}>About TidyBun</div>
           <div style={{fontSize:12,color:"var(--text3)",marginTop:4}}>v1.1.0 · Made with 🐰 and care</div>
         </Card>
